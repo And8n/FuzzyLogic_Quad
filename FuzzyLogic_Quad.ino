@@ -5,11 +5,6 @@
 #include "controller.h"
 
 #define led 13
-#define MIN(a,b) a > b ? b : a
-#define MAX(a,b) a > b ? a : b
-#define MIN3(a,b,c) ( (a) < (b) ? MIN(a,c) : MIN(b,c) )
-#define SWAP(a,b) a^=b; b^=a; a^=b;
-
 #define SETA GPIOA_PSOR
 #define CLRA GPIOA_PCOR
 #define SETB GPIOB_PSOR
@@ -21,6 +16,7 @@
 
 unsigned long loop_timer, esc_loop_timer;
 unsigned long counter[8];
+
 struct Initialise {
   byte flag[7];
   byte start0;
@@ -32,7 +28,7 @@ struct Controller {
   int16_t in[5];
 } ESC;
 
-struct GyroScopeData {
+struct GyroscopeData {
   int16_t x, y, z, Vector;
   float output;
   float setpoint;
@@ -127,7 +123,8 @@ void loop() {
   //Create instances
   Fuzzy FuzzyRoll(750, 100, 300, 10, 850.0, 400);
   Fuzzy FuzzyPitch(750, 100, 300, 10, 850.0, 400);
-  PID PidYaw(2.5, 0.003, 0, 400);
+  Fuzzy FuzzyYaw(750, 100, 300, 10, 0, 400);
+  //PID PidYaw(2.5, 0.003, 0, 400);
 
   //////////////
   
@@ -171,7 +168,7 @@ void loop() {
 
       FuzzyRoll.Reset();
       FuzzyPitch.Reset();
-      PidYaw.Reset();
+      FuzzyYaw.Reset();
     }
 
 
@@ -254,7 +251,9 @@ void loop() {
 
     pitch.output = FuzzyPitch.Controller(pitch.input, pitch.setpoint, init.autoLevel);
 
-    yaw.output = PidYaw.Controller(yaw.input, yaw.setpoint);
+    yaw.output = FuzzyYaw.Controller(yaw.input, yaw.setpoint, false);
+
+    //yaw.output = PidYaw.Controller(yaw.input, yaw.setpoint);
 
     ////////////////////////Battery volatage reader////////////////////////
     // int16_t batteryV; // simply add voltage devider to power source and connect to analog input
