@@ -8,14 +8,20 @@ functions::functions() {
   // cuntructor will be called each time an object is created
 }
 
+
+long functions::Pyth(long x, long y, long z){
+return sqrt((x * x) + (y * y) + (z * z));
+}
+
 int functions::ConvertStick(int in) {
   int in2 = in - 1500;
+  int out = 0;
 
   if (in > 1500)
-    out = (in2 * in2) / 1000 + (in2) / 2 + 1500;
+     out = ((in2 * in2) / 1000 + (in2) / 2 + 1500);
   else if (in < 1500)
-    out = 1500 - (in2 * in2) / 1000 + in2 / 2;
-  return out;
+     out =  (1500 - (in2 * in2) / 1000 + in2 / 2);
+ return out;
 }
 
 int functions::ConvertThrottle(int in) {
@@ -50,12 +56,12 @@ float functions::positiveNL(float x)//from -10 to 10
 float functions::negativeNL(float x)//from -10 to 10
 {
   float y;
-  y = (((-x * x * x - x) / 2020) + 0.5); // centre is 0.5
+  y = (((-x * x * x - x) / 2020.0) + 0.5); // centre is 0.5
   return y;
 }
 float functions::Limiter(float input, float upperLimit, float lowerLimit){
-    if (input >= upperLimit)input = upperLimit;
-  else if (input <= (lowerLimit))input = lowerLimit;
+    if (input >= upperLimit)return upperLimit;
+  else if (input <= (lowerLimit))return lowerLimit;
   return input;
 }
 

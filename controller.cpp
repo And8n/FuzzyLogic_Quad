@@ -1,6 +1,5 @@
 #include "arduino.h"
 #include "controller.h"
-#include "functions.h"
 
 
 

@@ -1,7 +1,9 @@
 #ifndef controller_h
 #define controller_h
+#include "functions.h"
 
-class Fuzzy {
+
+class Fuzzy: public functions {
   private:
     float e, de, re;
     float a[13], u[13], w[13];
@@ -28,7 +30,7 @@ class Fuzzy {
     void Reset();
 };
 
-class PID  {
+class PID: public functions {
   private:
     float pid_output;
     float error_p, error_i, error_d, error_p_last;

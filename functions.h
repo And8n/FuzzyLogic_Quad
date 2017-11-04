@@ -9,7 +9,7 @@ class functions {
 
     functions();
 
-
+    long Pyth(long x, long y, long z);
     int ConvertStick(int in);
     int ConvertThrottle(int in);
     float Gauss(float x, float a);

@@ -29,14 +29,14 @@ struct Controller {
 } ESC;
 
 struct GyroscopeData {
-  int16_t x, y, z, Vector;
+ 
   float output;
   float setpoint;
   float Adjust;
   float gyro;
   float acc;
   float angle;
-  float acc_angle;
+ 
   float input;
 } roll, pitch, yaw, throttle,acc;
 
@@ -89,7 +89,7 @@ void setup() {
   Receiver.throttle = Function.ConvertThrottle(Receiver.Channel[3]);
   Receiver.yaw = Function.ConvertStick(Receiver.Channel[4]);
 
-Serial.println(Receiver.throttle);
+
   while (Receiver.throttle < 990 || Receiver.throttle > 1050 || Receiver.yaw < 1400) {
     init.start0++;
     SETD = (1 << 4); //6
@@ -163,8 +163,8 @@ void loop() {
       
     } if (Receiver.SWITCH < 1300) {
       init.start0 = 1;
-      pitch.angle = pitch.acc_angle;
-      roll.angle = roll.acc_angle;
+      pitch.angle = gyro.getPitchAcc();
+      roll.angle = gyro.getRollAcc();
 
       FuzzyRoll.Reset();
       FuzzyPitch.Reset();
@@ -190,33 +190,9 @@ void loop() {
 
     gyro.Data(); //Call gyro data
     
-    roll.gyro = gyro.getGyroRoll();
-    pitch.gyro = gyro.getGyroPitch();
-    yaw.gyro = gyro.getGyroYaw();
-    acc.x = gyro.getAccX();
-    acc.y = gyro.getAccY();
-    acc.z = gyro.getAccZ();
-
-    roll.input = (roll.input * 0.7) + ((roll.gyro / 65.5) * 0.3);
-    pitch.input = (pitch.input * 0.7) + ((pitch.gyro / 65.5) * 0.3);
-    yaw.input = (yaw.input * 0.7) + ((yaw.gyro / 65.5) * 0.3);
-
-    roll.angle += roll.gyro * 0.0000611;
-    pitch.angle += pitch.gyro * 0.0000611;
-
-    pitch.angle -= roll.angle * sin(yaw.gyro * 0.000001066);
-    roll.angle += pitch.angle * sin(yaw.gyro * 0.000001066);
-
-    acc.Vector = sqrt((acc.x * acc.x) + (acc.y * acc.y) + (acc.z * acc.z));
-    if (abs(acc.y) < acc.Vector) pitch.acc_angle = asin((float)acc.y / acc.Vector) * 57.296;
-    if (abs(acc.x) < acc.Vector) roll.acc_angle = asin((float)acc.x / acc.Vector) * -57.296;
-
-    pitch.acc_angle -= 1;  // 1.0;
-    roll.acc_angle -= -1; // -1.0;
-    pitch.angle = pitch.angle * 0.9995 + pitch.acc_angle * 0.0005;
-    roll.angle = roll.angle * 0.9995 + roll.acc_angle * 0.0005;
-    pitch.Adjust = pitch.angle * 15.0;
-    roll.Adjust = roll.angle * 15.0;
+    roll.input = gyro.getGyroRoll();
+    pitch.input = gyro.getGyroPitch();
+    yaw.input = gyro.getGyroYaw();
 
     roll.setpoint = 0;
     pitch.setpoint = 0;
@@ -224,14 +200,17 @@ void loop() {
 
     if (Receiver.roll > 1508) roll.setpoint = (Receiver.roll - 1508);
     else if (Receiver.roll < 1492) roll.setpoint = (Receiver.roll - 1492);
+
     if (Receiver.pitch > 1508) pitch.setpoint = (1508 - Receiver.pitch);
     else if (Receiver.pitch < 1492) pitch.setpoint = (1492 - Receiver.pitch);
+
     if (Receiver.throttle > 1050) {
       if (Receiver.yaw > 1508)yaw.setpoint = (Receiver.yaw - 1508);
       else if (Receiver.yaw < 1492)yaw.setpoint = (Receiver.yaw - 1492);
     }
-    throttle.setpoint = Receiver.throttle;
-    if (Receiver.throttle < 1100)throttle.setpoint = 1100;
+
+   // throttle.setpoint = Receiver.throttle;
+    if (Receiver.throttle < 1100)Receiver.throttle = 1100;
 
     if (!init.autoLevel) { // rate mode
       roll.setpoint /= 1.2;
@@ -239,9 +218,9 @@ void loop() {
       yaw.setpoint /= 1.2;
     }
     else if (init.autoLevel) { //for auto level subtract roll/pitch adjust
-      roll.setpoint -= roll.Adjust;
+      roll.setpoint -= gyro.getRollAdjust();
       roll.setpoint /= 1.2;
-      pitch.setpoint -= pitch.Adjust;
+      pitch.setpoint -= gyro.getPitchAdjust();
       pitch.setpoint /= 1.2;
       yaw.setpoint /= 1.2;
     }
@@ -324,7 +303,7 @@ void loop() {
   }// end flying
 }//END
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ISR1() {
 

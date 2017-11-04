@@ -9,6 +9,8 @@ class filter {
     
   public:
     filter();
+   
+   
     float MovingAvg(float in, float snap);
     int MovingAvg(int in, float snap);
     long MovingAvg(long in, float snap);

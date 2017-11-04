@@ -10,6 +10,10 @@ filter::filter() {
 
 
 
+
+
+
+
 int filter::MovingAvg(int in, float snap) {
   diff = abs(in - out);
   
