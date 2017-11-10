@@ -5,6 +5,7 @@
 #include "controller.h"
 
 #define led 13
+//Define port registerss
 #define SETA GPIOA_PSOR
 #define CLRA GPIOA_PCOR
 #define SETB GPIOB_PSOR
@@ -29,16 +30,14 @@ struct Controller {
 } ESC;
 
 struct GyroscopeData {
- 
   float output;
   float setpoint;
   float Adjust;
   float gyro;
   float acc;
   float angle;
- 
   float input;
-} roll, pitch, yaw, throttle,acc;
+} roll, pitch, yaw, throttle, acc;
 
 struct Receiver {
   volatile uint16_t pitch, roll, throttle, yaw, SWITCH;
@@ -73,6 +72,7 @@ void setup() {
 
   gyro.Registers();
 
+  //150 ms pusle to keep motors from beeping
   for (int cal_int = 0; cal_int < 1000; cal_int++) {
     SETD = (1 << 4); //6
     SETD = (1 << 2); //7
@@ -90,6 +90,8 @@ void setup() {
   Receiver.yaw = Function.ConvertStick(Receiver.Channel[4]);
 
 
+
+  // ensure receivier is working before starting program
   while (Receiver.throttle < 990 || Receiver.throttle > 1050 || Receiver.yaw < 1400) {
     init.start0++;
     SETD = (1 << 4); //6
@@ -109,7 +111,7 @@ void setup() {
   }
 
 
-
+  //setup start
   init.start0 = 0;
   //batteryV = (analogRead(2)) * 1.2317;
   digitalWriteFast(led, LOW);
@@ -131,15 +133,12 @@ void loop() {
   bool FLYING = true;
   while (FLYING == true) {
     
-  init.flag[1] = 1;
-  init.flag[2] = 1;
-  init.flag[3] = 1;
-  init.flag[4] = 1;
-  init.flag[5] = 1;
 
-   /* for (int i = 0; i <= 5; i++) {
+   /for (int i = 0; i <= 5; i++) {
       init.flag[i] = 1;
-    }*/
+    }
+
+    //Retreive receiver signal 
 
     Receiver.roll = Function.ConvertStick(Receiver.Channel[1]);
     Receiver.pitch = Function.ConvertStick(Receiver.Channel[2]);
@@ -190,6 +189,7 @@ void loop() {
 
     gyro.Data(); //Call gyro data
     
+    //Get roll, pitch, yaw 
     roll.input = gyro.getGyroRoll();
     pitch.input = gyro.getGyroPitch();
     yaw.input = gyro.getGyroYaw();
@@ -212,12 +212,16 @@ void loop() {
    // throttle.setpoint = Receiver.throttle;
     if (Receiver.throttle < 1100)Receiver.throttle = 1100;
 
-    if (!init.autoLevel) { // rate mode
+
+// rate mode
+    if (!init.autoLevel) { 
       roll.setpoint /= 1.2;
       pitch.setpoint /= 1.2;
       yaw.setpoint /= 1.2;
     }
-    else if (init.autoLevel) { //for auto level subtract roll/pitch adjust
+
+     //for auto level subtract roll/pitch adjust
+    else if (init.autoLevel) {
       roll.setpoint -= gyro.getRollAdjust();
       roll.setpoint /= 1.2;
       pitch.setpoint -= gyro.getPitchAdjust();
@@ -225,12 +229,10 @@ void loop() {
       yaw.setpoint /= 1.2;
     }
 
-
+    // yaw, pitch and roll controllers
     roll.output = FuzzyRoll.Controller(roll.input, roll.setpoint, init.autoLevel);
-
     pitch.output = FuzzyPitch.Controller(pitch.input, pitch.setpoint, init.autoLevel);
-
-    yaw.output = FuzzyYaw.Controller(yaw.input, yaw.setpoint, false);
+    yaw.output = FuzzyYaw.Controller(yaw.input, yaw.setpoint, false);  //Always in rate mode
 
     //yaw.output = PidYaw.Controller(yaw.input, yaw.setpoint);
 
@@ -254,18 +256,21 @@ void loop() {
          esc_3 += esc_3 * ((1240 - batteryV) / (float)3500);
          esc_4 += esc_4 * ((1240 - batteryV) / (float)3500);
         }*/
-      if (ESC.in[1] < 1100) ESC.in[1] = 1100;     // 0x44C = 1100
+
+
+      //Limit ESC output. 1100 ms pulse to keep motors running
+      if (ESC.in[1] < 1100) ESC.in[1] = 1100;    
       if (ESC.in[2] < 1100) ESC.in[2] = 1100;
       if (ESC.in[3] < 1100) ESC.in[3] = 1100;
       if (ESC.in[4] < 1100) ESC.in[4] = 1100;
 
-      if (ESC.in[1] > 2000)ESC.in[1] = 2000;    // 0x7D0 = 2000
+      if (ESC.in[1] > 2000)ESC.in[1] = 2000;    
       if (ESC.in[2] > 2000)ESC.in[2] = 2000;
       if (ESC.in[3] > 2000)ESC.in[3] = 2000;
       if (ESC.in[4] > 2000)ESC.in[4] = 2000;
     }
     else {
-      ESC.in[1] = 1000;    // 0x3E8 = 1000
+      ESC.in[1] = 1000;   
       ESC.in[2] = 1000;
       ESC.in[3] = 1000;
       ESC.in[4] = 1000;
@@ -276,6 +281,8 @@ void loop() {
     ESC.out[3] = (float)ESC.in[3] / 8.0;
     ESC.out[4] = (float)ESC.in[4] / 8.0;
 
+
+    //wait for loop timer to expire
     if ((micros() - loop_timer) > 4050)digitalWriteFast(led, HIGH);
     while ((micros() - loop_timer) < 4000);
 
@@ -304,6 +311,10 @@ void loop() {
 }//END
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+///// Interrupts for receiver
 
 void ISR1() {
 
